@@ -11,6 +11,7 @@ import {
   CalendarDays,
   X,
   UserPlus,
+  Save,
 } from "lucide-react";
 import { useStore } from "@/store/useStore";
 import { cn } from "@/lib/utils";
@@ -23,7 +24,17 @@ export default function Contacts() {
   const contacts = useStore((s) => s.contacts);
   const letters = useStore((s) => s.letters);
   const getAllContactStats = useStore((s) => s.getAllContactStats);
+  const createContact = useStore((s) => s.createContact);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [formName, setFormName] = useState("");
+  const [formAddress, setFormAddress] = useState("");
+  const [formCity, setFormCity] = useState("");
+  const [formCountry, setFormCountry] = useState("");
+  const [formLat, setFormLat] = useState<string>("");
+  const [formLng, setFormLng] = useState<string>("");
 
   const allContactStats = useMemo(() => getAllContactStats(), [getAllContactStats, letters, contacts]);
 
@@ -49,6 +60,43 @@ export default function Contacts() {
     );
   }, [contactsWithStats, searchQuery]);
 
+  const resetForm = () => {
+    setFormName("");
+    setFormAddress("");
+    setFormCity("");
+    setFormCountry("");
+    setFormLat("");
+    setFormLng("");
+  };
+
+  const openModal = () => {
+    resetForm();
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    resetForm();
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formName.trim()) return;
+    setSubmitting(true);
+    try {
+      const c = await createContact({
+        name: formName.trim(),
+        address: formAddress.trim(),
+        city: formCity.trim(),
+        country: formCountry.trim(),
+      });
+      closeModal();
+      navigate(`/contacts/${c.id}`);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -69,7 +117,7 @@ export default function Contacts() {
             共 {contacts.length} 位联系人 · {allContactStats.length} 位有往来记录
           </p>
         </div>
-        <button className="btn-primary flex-shrink-0">
+        <button onClick={openModal} className="btn-primary flex-shrink-0">
           <Plus className="w-4 h-4" />
           新增联系人
         </button>
@@ -119,7 +167,7 @@ export default function Contacts() {
                   清除搜索
                 </button>
               )}
-              <button className="btn-primary">
+              <button onClick={openModal} className="btn-primary">
                 <Plus className="w-4 h-4" />
                 添加联系人
               </button>
@@ -241,6 +289,126 @@ export default function Contacts() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-900/40 backdrop-blur-sm animate-fade-in">
+          <div
+            className="card-parchment w-full max-w-lg animate-pop-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-5 border-b border-parchment-200/60">
+              <h2 className="font-display font-bold text-xl text-ink-800 flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-ink-600" />
+                新增联系人
+              </h2>
+              <button
+                onClick={closeModal}
+                className="p-1.5 rounded-lg hover:bg-parchment-100 text-ink-400 hover:text-ink-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-5 space-y-4">
+              <div>
+                <label className="text-xs font-medium text-ink-500 mb-1.5 block">
+                  姓名 *
+                </label>
+                <input
+                  type="text"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  placeholder="请输入联系人姓名"
+                  required
+                  className="input-field py-2.5"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-ink-500 mb-1.5 block">
+                  城市
+                </label>
+                <input
+                  type="text"
+                  value={formCity}
+                  onChange={(e) => setFormCity(e.target.value)}
+                  placeholder="例如：上海"
+                  className="input-field py-2.5"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-ink-500 mb-1.5 block">
+                  国家
+                </label>
+                <input
+                  type="text"
+                  value={formCountry}
+                  onChange={(e) => setFormCountry(e.target.value)}
+                  placeholder="例如：中国"
+                  className="input-field py-2.5"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-ink-500 mb-1.5 block">
+                  详细地址
+                </label>
+                <input
+                  type="text"
+                  value={formAddress}
+                  onChange={(e) => setFormAddress(e.target.value)}
+                  placeholder="街道、门牌号等"
+                  className="input-field py-2.5"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-ink-500 mb-1.5 block">
+                    纬度
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={formLat}
+                    onChange={(e) => setFormLat(e.target.value)}
+                    placeholder="例如：31.2304"
+                    className="input-field py-2.5"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-ink-500 mb-1.5 block">
+                    经度
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={formLng}
+                    onChange={(e) => setFormLng(e.target.value)}
+                    placeholder="例如：121.4737"
+                    className="input-field py-2.5"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="btn-ghost"
+                  disabled={submitting}
+                >
+                  取消
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={submitting || !formName.trim()}
+                >
+                  <Save className="w-4 h-4" />
+                  {submitting ? "保存中..." : "保存"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

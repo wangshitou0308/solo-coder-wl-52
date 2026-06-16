@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Mail,
   Search,
@@ -12,14 +12,16 @@ import {
   CalendarDays,
   Users,
   Stamp,
+  MessageCircle,
 } from "lucide-react";
 import LetterCard from "@/components/LetterCard";
 import Empty from "@/components/Empty";
 import { useStore } from "@/store/useStore";
-import { SortField, Contact, LetterType, Direction } from "@/types";
+import { SortField, Contact, LetterType, Direction, RepliedFilter } from "@/types";
 import { cn } from "@/lib/utils";
 
 export default function Letters() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const loading = useStore((s) => s.loading);
   const filters = useStore((s) => s.filters);
   const setFilters = useStore((s) => s.setFilters);
@@ -33,6 +35,35 @@ export default function Letters() {
   const removeLetter = useStore((s) => s.removeLetter);
   const markLetterReplied = useStore((s) => s.markLetterReplied);
   const letters = useStore((s) => s.letters);
+
+  useEffect(() => {
+    const initial: Record<string, any> = {};
+    const direction = searchParams.get("direction");
+    const type = searchParams.get("type");
+    const replied = searchParams.get("replied");
+    const contactId = searchParams.get("contactId");
+    const year = searchParams.get("year");
+    const search = searchParams.get("search");
+
+    if (direction === "sent" || direction === "received") initial.direction = direction;
+    if (type === "letter" || type === "postcard") initial.type = type;
+    if (replied === "pending" || replied === "replied") initial.replied = replied;
+    if (contactId) initial.contactId = contactId;
+    if (year) initial.year = Number(year);
+    if (search) initial.search = search;
+
+    if (Object.keys(initial).length > 0) {
+      setFilters(initial);
+      searchParams.delete("direction");
+      searchParams.delete("type");
+      searchParams.delete("replied");
+      searchParams.delete("contactId");
+      searchParams.delete("year");
+      searchParams.delete("search");
+      setSearchParams(searchParams, { replace: true });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const lettersList = useMemo(() => filteredLetters(), [filteredLetters, letters, filters, sortField, sortOrder]);
   const availableYears = useMemo(() => getAvailableYears(), [getAvailableYears, letters]);
@@ -50,6 +81,7 @@ export default function Letters() {
     filters.contactId !== null,
     filters.year !== null,
     filters.search !== "",
+    filters.replied !== "all",
   ].filter(Boolean).length;
 
   if (loading) {
@@ -137,7 +169,7 @@ export default function Letters() {
 
         <div className="divider-postmark" />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
           <div>
             <label className="text-xs font-medium text-ink-500 mb-1.5 block flex items-center gap-1">
               <Stamp className="w-3 h-3" />
@@ -171,6 +203,24 @@ export default function Letters() {
               <option value="all">全部方向</option>
               <option value="sent">寄出</option>
               <option value="received">收到</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-ink-500 mb-1.5 block flex items-center gap-1">
+              <MessageCircle className="w-3 h-3" />
+              回复状态
+            </label>
+            <select
+              value={filters.replied || "all"}
+              onChange={(e) =>
+                setFilters({ replied: e.target.value as RepliedFilter })
+              }
+              className="input-field py-2.5 text-sm"
+            >
+              <option value="all">全部状态</option>
+              <option value="pending">待回信</option>
+              <option value="replied">已回复</option>
             </select>
           </div>
 

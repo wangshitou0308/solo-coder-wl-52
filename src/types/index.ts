@@ -109,10 +109,13 @@ export type SortField =
   | "contact_name";
 export type SortOrder = "asc" | "desc";
 
+export type RepliedFilter = "all" | "pending" | "replied";
+
 export interface LetterFilters {
   type?: LetterType | "all";
   direction?: Direction | "all";
   contactId?: string | null;
   search?: string;
   year?: number | null;
+  replied?: RepliedFilter;
 }

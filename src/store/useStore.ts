@@ -13,6 +13,7 @@ import {
   PendingReply,
   SortField,
   SortOrder,
+  RepliedFilter,
 } from "@/types";
 import {
   getAllContacts,
@@ -106,6 +107,7 @@ export const useStore = create<AppState>((set, get) => ({
     contactId: null,
     search: "",
     year: null,
+    replied: "all" as RepliedFilter,
   },
   sortField: "created_at",
   sortOrder: "desc",
@@ -139,6 +141,7 @@ export const useStore = create<AppState>((set, get) => ({
         contactId: null,
         search: "",
         year: null,
+        replied: "all",
       },
     }),
 
@@ -205,6 +208,11 @@ export const useStore = create<AppState>((set, get) => ({
     }
     if (filters.direction && filters.direction !== "all") {
       result = result.filter((l) => l.direction === filters.direction);
+    }
+    if (filters.replied && filters.replied !== "all") {
+      result = result.filter((l) =>
+        filters.replied === "pending" ? !l.is_replied : l.is_replied
+      );
     }
     if (filters.contactId) {
       result = result.filter((l) => l.contact_id === filters.contactId);
